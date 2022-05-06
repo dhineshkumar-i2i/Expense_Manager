@@ -27,7 +27,7 @@ class Ledger(models.Model):
     is_shared = models.BooleanField(default=False)
     total_amount = models.FloatField(default=0,
                                      validators=[MinValueValidator(0.0)])
-    users = models.ManyToManyField(UserDetails,
+    user = models.ManyToManyField(UserDetails,
                                    related_name='ledger')
 
 

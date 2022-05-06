@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
@@ -8,6 +10,8 @@ from ledger.serializer import LedgerSerializer
 import ledger.service as ledger_service
 from user.models import UserDetails
 from user.service import get_user
+
+logger = logging.getLogger('root')
 
 
 class LedgerViewSet(viewsets.ModelViewSet):
@@ -20,9 +24,10 @@ class LedgerViewSet(viewsets.ModelViewSet):
         """Create method for Ledger where user is explicitly related"""
 
         try:
+            logger.debug('Create Ledger API called with data: {}'.format(request.data))
             user_id = self.kwargs['user_id']
             user = get_user(user_id)
-            request.data['users'] = [user_id]
+            request.data['user'] = [user_id]
             return super().create(request)
         except ObjectDoesNotExist:
             return Response({'message': 'No such user'}, status=404)
@@ -32,6 +37,7 @@ class LedgerViewSet(viewsets.ModelViewSet):
 
         try:
             user_id = self.kwargs['user_id']
+            logger.debug('list user ledgers API called for user with Id: {}'.format(user_id))
             user = get_user(user_id)
             return Response(user['ledger'])
         except ObjectDoesNotExist:
@@ -56,6 +62,17 @@ class LedgerViewSet(viewsets.ModelViewSet):
 
 @api_view(['PUT'])
 def split_expense(request, user_id, ledger_id):
-    """Split the expense equally between multiple users."""
+    """Splits the expense equally between multiple users."""
 
+    logger.debug('Split expense API called.')
     return Response(ledger_service.split_expense(ledger_id, request.data))
+
+
+@api_view(['POST'])
+def load_pdf(request, user_id):
+    """Loads transactions from bank pdf and create ledgers"""
+
+    logger.debug('Load Pdf API called. File name: {}'.format(request.data["fileName"]))
+    return Response(ledger_service.load_pdf(user_id,
+                                            request.data["fileName"],
+                                            request.data["password"]))
